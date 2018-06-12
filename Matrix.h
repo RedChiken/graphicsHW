@@ -19,7 +19,6 @@ struct Vertex
 	double z;
 	double h;
 	double normal_vec[3];
-	int color[3];
 
 	Vertex() : Vertex(0, 0, 0)
 	{
@@ -32,10 +31,6 @@ struct Vertex
 		z = v3;
 		h = vh;
 		//TODO: check and write it
-		
-		color[0] = rand() % 256;
-		color[1] = rand() % 256;
-		color[2] = rand() % 256;
 	}
 
 	Vertex operator+(Vertex vertex)
@@ -70,10 +65,6 @@ struct Vertex
 	double size() {
 		return sqrt(x * x + y * y + z * z);
 	}
-
-	Vertex colorVector(const int& i) {
-		return Vertex(x, y, color[i]);
-	}
 };
 
 struct Face
@@ -81,9 +72,8 @@ struct Face
 	int v1;
 	int v2;
 	int v3;
-	double Norm[3];
-	//need color;
-	int rgb[3] = { rand() * 255, rand() * 255 , rand() * 255 };
+	Vertex Norm;
+	int rgb[3] = { 255, 255, 0 };
 	Face()
 	{
 	}
@@ -99,6 +89,34 @@ struct Face
 		v1 = f.v1;
 		v2 = f.v2;
 		v3 = f.v3;
+	}
+	COLORREF getcolor() {
+		return RGB(rgb[0], rgb[1], rgb[2]);
+	}
+
+	COLORREF getRealColor(double angle, double k1 = 0.2, double k2 = 0.6) {
+		int r_real = static_cast<int>(rgb[0] * k1 + 255 * k2 * angle);
+		if (r_real < 0) {
+			r_real = 0;
+		}
+		else {
+			r_real %= 256;
+		}
+		int g_real = static_cast<int>(rgb[1] * k1 + 255 * k2 * angle);
+		if (g_real < 0) {
+			g_real = 0;
+		}
+		else {
+			g_real %= 256;
+		}
+		int b_real = static_cast<int>(rgb[2] * k1 + 255 * k2 * angle);
+		if (b_real < 0) {
+			b_real = 0;
+		}
+		else {
+			b_real %= 256;
+		}
+		return RGB(r_real, g_real, b_real);
 	}
 };
 

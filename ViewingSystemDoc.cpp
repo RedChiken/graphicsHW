@@ -141,12 +141,6 @@ void CViewingSystemDoc::FileOpen(CString filename)
 			fin >> num1 >> num2 >> num3;
 
 			m_vertices[i] = Vertex(num1, num2, num3);
-			//TODO: check it and delete
-			/*
-			m_vertices[i].r = 255 * (i % 3);
-			m_vertices[i].g = 255 * ((i + 1) % 3);
-			m_vertices[i].b = 255 * ((i + 2) % 3);
-			*/
 		}
 		m_vertices[numberOfVertices] = Vertex(0, 0, 0);
 		m_vertices[numberOfVertices + 1] = Vertex(300, 0, 0);
@@ -227,13 +221,6 @@ void CViewingSystemDoc::Rendering()
 		for (int i = 0; i < m_numberOfVertices - 4; i++) {
 			temp[i] = m_vertices[i] + Vertex(center.x, center.y, 0);
 		}
-
-		//3. 각 face마다 해당 좌표가 범위 안인지 확인
-		//   또 그 face가 앞면인지 확인
-		//   안에 있을 경우 특정 변수에 face 레퍼런싱.
-		//   레퍼런싱은 z값에 따라 다름.
-		//   최종 변수의 face에 지정된 색 정보를 배열에 저장
-		//4. 배열을 넘겨 한꺼번에 칠함.
 		DrawColor(temp);
 		delete[] temp;
 	}
@@ -439,13 +426,6 @@ void CViewingSystemDoc::DrawColor(Vertex *temp) {
 }
 
 bool CViewingSystemDoc::Intersection(Vertex * temp, Face& face, const int& x, const int& y, double& intp_z) {
-	CPoint center = CPoint(win.Width() / 2, win.Height() / 2);
-	int faces[4] = { face.v1, face.v2, face.v3, face.v1 };
-	/*
-	intersection 제대로 안됨.
-	조건 체크가 제대로 안되는지 이상한 범위가 칠해진다.
-	intersection 조건 체크를 좀 잘 해보자...
-	*/
 	double a = 0, b = 0;
 	Vertex vec1 = temp[face.v2] - temp[face.v1];
 	Vertex vec2 = temp[face.v3] - temp[face.v1];
@@ -454,9 +434,7 @@ bool CViewingSystemDoc::Intersection(Vertex * temp, Face& face, const int& x, co
 	b = (p.x * vec1.y - p.y * vec1.x) / (vec2.x * vec1.y - vec1.x * vec2.y);
 	if (((a >= 0) && (a <= 1)) && ((b >= 0) && (b <= 1)) && (((a + b) >= 0) && ((a + b) <= 1))) {
 		Vertex norm = Normalization(CrossProduct(vec1, vec2));
-		face.Norm[0] = norm.x;
-		face.Norm[1] = norm.y;
-		face.Norm[2] = norm.z;
+		face.Norm = norm;
 		if ((norm.z < 0.00000001) && (norm.z > -0.00000001)) {
 			return false;
 		}
@@ -475,14 +453,10 @@ void CViewingSystemDoc::Flat(const tuple<int, int, int>& tuple)
 	int x = std::get<0>(tuple);
 	int y = std::get<1>(tuple);
 	int face_index = std::get<2>(tuple);
-	int color[3];
-	for (int i = 0; i < 3; i++) {
-		color[i] = m_vertices[m_faces[face_index].v1].color[i] 
-			+ m_vertices[m_faces[face_index].v2].color[i] 
-			+ m_vertices[m_faces[face_index].v3].color[i];
-	}
-	COLORREF c = RGB(color[0] % 256, color[1] % 256, color[2] % 256);
-	memdc.SetPixel(x, win.Height() - y, c);
+	Vertex ray(win.Width() / 2 - x, win.Height() / 2 - y, -500);
+	double angle = DotProduct(Normalization(m_faces[face_index].Norm), Normalization(ray));
+	//if(memdc.GetPixel(x, win.Height() - y) == RGB(255, 255, 255))
+	memdc.SetPixel(x, win.Height() - y, m_faces[face_index].getRealColor(angle));
 }
 
 void CViewingSystemDoc::Gouraud(const tuple<int, int, int>& tuple)
@@ -492,16 +466,7 @@ void CViewingSystemDoc::Gouraud(const tuple<int, int, int>& tuple)
 	int face_index = std::get<2>(tuple);
 	Vertex vertex[3];
 	int color[3];
-	for (int i = 0; i < 3; i++) {
-		vertex[0] = m_vertices[m_faces[face_index].v1].colorVector(i);
-		vertex[1] = m_vertices[m_faces[face_index].v2].colorVector(i);
-		vertex[2] = m_vertices[m_faces[face_index].v3].colorVector(i);
-		Vertex v1 = vertex[1] - vertex[0];
-		Vertex v2 = vertex[2] - vertex[0];
-		Vertex norm = CrossProduct(v1, v2);
-		color[i] = static_cast<int>(vertex[0].z - ((x - vertex[0].x) * norm.x + (y - vertex[0].y) * norm.y) / norm.z);
-	}
-	memdc.SetPixel(x, win.Height() - y, RGB(color[0] % 256, color[1] % 256, color[2] % 256));
+	
 }
 
 void CViewingSystemDoc::Phong(const tuple<int, int, int>& tuple)
