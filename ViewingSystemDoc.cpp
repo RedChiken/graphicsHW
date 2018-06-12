@@ -234,6 +234,12 @@ void CViewingSystemDoc::Rendering()
 			drawingPoint[3] = CPoint(int(m_vertices[m_faces[i].v1].x + center.x + perspectiveValue(m_vertices[m_faces[i].v1].x, CenterVertex().x, m_vertices[m_faces[i].v1].z)), int(-m_vertices[m_faces[i].v1].y + center.y - perspectiveValue(m_vertices[m_faces[i].v1].y, CenterVertex().y, m_vertices[m_faces[i].v1].z)));
 			memdc.Polyline(drawingPoint, 4);
 		}
+		temp = new Vertex[m_numberOfVertices - 4];
+		for (int i = 0; i < m_numberOfVertices - 4; i++) {
+			temp[i] = m_vertices[i] + Vertex(center.x + perspectiveValue(m_vertices[i].x, CenterVertex().x, m_vertices[i].z), center.y + perspectiveValue(m_vertices[i].y, CenterVertex().y, m_vertices[i].z), 0);
+		}
+		DrawColor(temp);
+		delete[] temp;
 	}
 
 	memdc.MoveTo(int(m_vertices[m_numberOfVertices - 4].x + center.x), int(-1 * m_vertices[m_numberOfVertices - 4].y + center.y));
@@ -407,7 +413,6 @@ void CViewingSystemDoc::DrawColor(Vertex *temp) {
 		}
 	}
 	
-
 	switch (this->shadingType) {
 	case Shading::FLAT:
 		for (const auto& tuple : pixel_info) {
