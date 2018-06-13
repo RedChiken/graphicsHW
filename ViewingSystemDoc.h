@@ -61,9 +61,9 @@ public:
 	double DotProduct(Vertex a, Vertex b);		// 두 Vertex의 내적을 구하는 함수
 	void DrawColor(Vertex *temp);
 	bool Intersection(Vertex * temp, Face& gace, const int& x, const int& y, double& intp_z);
-	void Flat(const std::tuple<int, int, int>& tuple);
-	void Gouraud(const std::tuple<int, int, int>& tuple);
-	void Phong(const std::tuple<int, int, int>& tuple);
+	void Flat(const std::tuple<int, int, int, int>& tuple);
+	void Gouraud(const std::tuple<int, int, int, int>& tuple);
+	void Phong(const std::tuple<int, int, int, int>& tuple);
 	Vertex Normalization(Vertex vertex);		// Vertex를 정규화 시키는 함수
 	Matrix InverseMatrix(Vertex& a, Vertex& b, Vertex& c);
 

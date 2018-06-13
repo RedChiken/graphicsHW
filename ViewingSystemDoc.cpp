@@ -392,7 +392,7 @@ void CViewingSystemDoc::DrawColor(Vertex *temp) {
 			y_min = static_cast<int>(temp[i].y);
 		}
 	}
-	vector<std::tuple<int, int, int>> pixel_info;
+	vector<std::tuple<int, int, int, int>> pixel_info;
 	for (int i = x_min; i < x_max; i++) {
 		for (int j = y_min; j < y_max; j++) {
 			double max_z = DBL_MAX;
@@ -406,13 +406,12 @@ void CViewingSystemDoc::DrawColor(Vertex *temp) {
 					}
 				}
 			}
-			
 			if (max_z_index > -1) {
-				pixel_info.push_back(make_tuple(i, j, max_z_index));
+				pixel_info.push_back(make_tuple(i, j, max_z, max_z_index));
 			}
 		}
 	}
-	
+
 	switch (this->shadingType) {
 	case Shading::FLAT:
 		for (const auto& tuple : pixel_info) {
@@ -440,6 +439,7 @@ bool CViewingSystemDoc::Intersection(Vertex * temp, Face& face, const int& x, co
 	if (((a >= 0) && (a <= 1)) && ((b >= 0) && (b <= 1)) && (((a + b) >= 0) && ((a + b) <= 1))) {
 		Vertex norm = Normalization(CrossProduct(vec1, vec2));
 		face.Norm = norm;
+		m_vertices[face.v1].addNorm(norm);
 		if ((norm.z < 0.00000001) && (norm.z > -0.00000001)) {
 			return false;
 		}
@@ -453,27 +453,71 @@ bool CViewingSystemDoc::Intersection(Vertex * temp, Face& face, const int& x, co
 	}
 }
 
-void CViewingSystemDoc::Flat(const tuple<int, int, int>& tuple)
+void CViewingSystemDoc::Flat(const tuple<int, int, int, int>& tuple)
 {
 	int x = std::get<0>(tuple);
 	int y = std::get<1>(tuple);
-	int face_index = std::get<2>(tuple);
-	Vertex ray(win.Width() / 2 - x, win.Height() / 2 - y, -500);
+	int z = std::get<2>(tuple);
+	int face_index = std::get<3>(tuple);
+	Vertex ray(win.Width() / 2 - x, win.Height() / 2 - y, -500 - z);
 	double angle = DotProduct(Normalization(m_faces[face_index].Norm), Normalization(ray));
 	//if(memdc.GetPixel(x, win.Height() - y) == RGB(255, 255, 255))
 	memdc.SetPixel(x, win.Height() - y, m_faces[face_index].getRealColor(angle));
 }
 
-void CViewingSystemDoc::Gouraud(const tuple<int, int, int>& tuple)
+void CViewingSystemDoc::Gouraud(const tuple<int, int, int, int>& tuple)
 {
 	int x = std::get<0>(tuple);
 	int y = std::get<1>(tuple);
-	int face_index = std::get<2>(tuple);
-	Vertex vertex[3];
-	int color[3];
-	
+	int z = std::get<2>(tuple);
+	int face_index = std::get<3>(tuple);
+	Vertex vertex[3] = {m_vertices[m_faces[face_index].v1], 
+		m_vertices[m_faces[face_index].v2], 
+		m_vertices[m_faces[face_index].v3]};
+	Vertex ray, normal;
+	double angle[3];
+	COLORREF colors[3];
+	int color_arr[3][3];
+	for (int i = 0; i < 3; i++) {
+		ray = Normalization(Vertex(win.Width() / 2, win.Height() / 2, -500) - vertex[i]);
+		angle[i] = DotProduct(ray, Normalization(vertex[i].getNorm()));
+		colors[i] = m_faces[face_index].getRealColor(angle[i]);
+		color_arr[i][0] = GetRValue(colors[i]);
+		color_arr[i][1] = GetGValue(colors[i]);
+		color_arr[i][2] = GetBValue(colors[i]);
+	}
+	Vertex v1 = vertex[1] - vertex[0];
+	Vertex v2 = vertex[2] - vertex[0];
+	int dot_color[3];
+	for (int i = 0; i < 3; i++) {
+		v1.z = color_arr[1][i] - color_arr[0][i];
+		v2.z = color_arr[2][i] - color_arr[0][i];
+		normal = Normalization(CrossProduct(v1, v2));
+		//normal.z가 값이 상당히 작은 듯 하다.
+		if (normal.z < 0.00001) {
+			dot_color[i] = (color_arr[0][i] + color_arr[0][i] + color_arr[0][i]) / 3;
+		}
+		else {
+			dot_color[i] = static_cast<int>((vertex[0].x - x) * normal.x + (vertex[1].y - y) * normal.y) / normal.z + color_arr[0][i];
+			if (dot_color[i] < 0) {
+				dot_color[i] = 0;
+			}
+			else {
+				dot_color[i] %= 256;
+			}
+		}
+	}
+	/*
+	Vertex normal = CrossProduct(v1, v2);
+	Vertex p = Vertex(x, y, z) - vertex[0];
+	double a = CrossProduct(p, v2) / CrossProduct(v1, v2);
+	double b = CrossProduct(p, v1) / CrossProduct(v1, v2);
+	double dot_angle = ((colors[1] - colors[0]) * a + (colors[2] - colors[0]) * b);
+	memdc.SetPixel(x, win.Height() - y, m_faces[face_index].getRealColor(dot_angle));
+	*/
+	memdc.SetPixel(x, win.Height() - y, RGB(dot_color[0], dot_color[1], dot_color[2]));
 }
 
-void CViewingSystemDoc::Phong(const tuple<int, int, int>& tuple)
+void CViewingSystemDoc::Phong(const tuple<int, int, int, int>& tuple)
 {
 }

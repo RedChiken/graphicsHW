@@ -18,7 +18,7 @@ struct Vertex
 	double y;
 	double z;
 	double h;
-	double normal_vec[3];
+	double norm[3];
 
 	Vertex() : Vertex(0, 0, 0)
 	{
@@ -30,7 +30,24 @@ struct Vertex
 		y = v2;
 		z = v3;
 		h = vh;
+		setNorm();
 		//TODO: check and write it
+	}
+
+	void addNorm(Vertex v) {
+		norm[0] += v.x;
+		norm[1] += v.y;
+		norm[2] += v.z;
+	}
+
+	Vertex getNorm() {
+		return Vertex(norm[0], norm[1], norm[2]);
+	}
+
+	void setNorm() {
+		norm[0] = 0;
+		norm[1] = 0;
+		norm[2] = 0;
 	}
 
 	Vertex operator+(Vertex vertex)
@@ -90,6 +107,7 @@ struct Face
 		v2 = f.v2;
 		v3 = f.v3;
 	}
+
 	COLORREF getcolor() {
 		return RGB(rgb[0], rgb[1], rgb[2]);
 	}
